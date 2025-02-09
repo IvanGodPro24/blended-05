@@ -1,11 +1,26 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { fetchBaseCurrency, fetchExchangeCurrency } from './operations';
+import {
+  fetchBaseCurrency,
+  fetchExchangeCurrency,
+  fetchRates,
+} from './operations';
+
+const handlePending = state => {
+  state.error = null;
+  state.loading = true;
+};
+
+const handleRejected = (state, action) => {
+  state.loading = false;
+  state.error = action.payload;
+};
 
 const slice = createSlice({
   name: 'currency',
 
   initialState: {
     baseCurrency: '',
+    rates: [],
     exchangeInfo: null,
     loading: false,
     error: null,
@@ -18,30 +33,36 @@ const slice = createSlice({
 
   extraReducers: builder =>
     builder
-      .addCase(fetchBaseCurrency.pending, state => {
-        state.loading = true;
-      })
       .addCase(fetchBaseCurrency.fulfilled, (state, action) => {
         state.loading = false;
         state.baseCurrency = action.payload;
       })
-      .addCase(fetchBaseCurrency.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-      .addCase(fetchExchangeCurrency.pending, state => {
-        state.error = null;
-        state.loading = true;
-      })
+
       .addCase(fetchExchangeCurrency.fulfilled, (state, action) => {
         state.loading = false;
         state.exchangeInfo = action.payload;
       })
-      .addCase(fetchExchangeCurrency.rejected, (state, action) => {
+
+      .addCase(fetchRates.fulfilled, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
-      }),
+        state.rates = action.payload;
+      })
+
+      .addMatcher(action => {
+        return action.type.endsWith('rejected');
+      }, handleRejected)
+
+      .addMatcher(action => {
+        return action.type.endsWith('pending');
+      }, handlePending),
 });
+
+// .addMatcher(
+// isAnyOf(
+// fetchBaseCurrency.rejected, fetchExchangeCurrency.rejected),
+// (state, action) => {
+// функція, що Ви створили для зміни станів loader та error
+// })
 
 export const currencyReducer = slice.reducer;
 export const { setBaseCurrency } = slice.actions;
